@@ -16,6 +16,7 @@ pub enum GithubPrActions {
     created,
     deleted,
     review_requested,
+    reopened,
 }
 
 #[derive(Deserialize, Debug)]

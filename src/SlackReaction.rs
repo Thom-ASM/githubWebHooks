@@ -1,6 +1,8 @@
+use std::fmt::Debug;
+
 use async_trait::async_trait;
-use awc::{self, Client};
 use dotenv::var;
+use reqwest::Response;
 use serde::Serialize;
 use serde_json::to_string;
 
@@ -19,30 +21,26 @@ impl SlackReactionArgs {
 
 #[async_trait(?Send)]
 pub trait SendableToSlack {
-    fn serialize_self(&self) -> Result<String, serde_json::Error>;
-    async fn send_request(&self, payload: &String) -> Result<(), ()>;
+    async fn send_request(&self, payload: &SlackReactionArgs) -> Result<Response, ()>;
 }
 
 #[async_trait(?Send)]
 impl SendableToSlack for SlackReactionArgs {
-    fn serialize_self(&self) -> Result<String, serde_json::Error> {
-        to_string(&self)
-    }
+    async fn send_request(&self, payload: &SlackReactionArgs) -> Result<Response, ()> {
+        let http_client = reqwest::Client::new();
 
-    async fn send_request(&self, payload: &String) -> Result<(), ()> {
-        let http_client = Client::new();
         let response = http_client
             .post("https://slack.com/api/reactions.add")
             .bearer_auth(var("SLACK_BOT_OAUTH_TOKEN").unwrap())
-            .send_json(payload)
+            .header("Content-Type", "application/json; charset=UTF-8")
+            .json(payload)
+            .send()
             .await;
 
         match response {
-            Ok(res) => println!("response {:?}", res),
-            Err(err) => println!("Error: {:?}", err),
+            Ok(res) => return Ok(res),
+            Err(_) => return Err(()),
         }
-
-        Ok(())
     }
 }
 

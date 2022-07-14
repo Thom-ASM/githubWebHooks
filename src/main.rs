@@ -15,7 +15,7 @@ async fn send_update_to_slack(state: &GithubPrReviewState) -> Result<(), ()> {
     let mut args = SlackReaction::SlackReactionArgs {
         channel: dotenv::var("SLACK_CHANNEL_ID").unwrap().to_string(),
         name: SlackReaction::Reaction::white_check_mark,
-        timestamp: "1657658953.374879".to_string(),
+        timestamp: "1657833380.803579".to_string(),
     };
 
     match state {
@@ -30,15 +30,16 @@ async fn send_update_to_slack(state: &GithubPrReviewState) -> Result<(), ()> {
         }
     }
 
-    let payload = args.serialize_self().unwrap();
-    args.send_request(&payload).await?;
+    let res = args.send_request(&args).await?;
+
+    let text = res.text().await.unwrap();
+    println!("{:#}", text);
 
     Ok(())
 }
 
 #[post("/github")]
 async fn handle_response(payload: web::Json<GithubResponse>) -> impl Responder {
-    println!("{:?}{:?}", payload.action, payload.review.state);
     send_update_to_slack(&payload.review.state).await.unwrap();
 
     format!("Hello github!")
